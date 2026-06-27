@@ -1,0 +1,210 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { C, fonts, ZONES, ZoneKey, statusOf } from '../theme';
+import { GroceryItem, Recipe } from '../types';
+import { RECIPES } from '../data';
+
+export default function HomeScreen({
+  items,
+  onGoInventory,
+  onGoExpiry,
+  onGoRecipes,
+  onOpenRecipe,
+  onComingSoon,
+  onGoAdd,
+}: {
+  items: GroceryItem[];
+  onGoInventory: () => void;
+  onGoExpiry: () => void;
+  onGoRecipes: () => void;
+  onOpenRecipe: (r: Recipe) => void;
+  onComingSoon: (kind: 'scan' | 'voice') => void;
+  onGoAdd: () => void;
+}) {
+  const expiring = items.filter((i) => i.days <= 3).sort((a, b) => a.days - b.days);
+  const expired = expiring.filter((i) => i.days < 0).length;
+  const zoneCounts: Record<string, number> = {};
+  items.forEach((i) => {
+    zoneCounts[i.zone] = (zoneCounts[i.zone] || 0) + 1;
+  });
+  const top = RECIPES[0];
+  const isEmpty = items.length === 0;
+
+  return (
+    <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.greeting}>Good morning 👋</Text>
+          <Text style={styles.heading}>What's in your kitchen</Text>
+        </View>
+        <TouchableOpacity onPress={() => onComingSoon('voice')} style={styles.voiceBtn} activeOpacity={0.85}>
+          <Text style={{ fontSize: 20 }}>🎙️</Text>
+        </TouchableOpacity>
+      </View>
+
+      <LinearGradient colors={['#3C7A50', '#2C5E3F']} style={styles.hero}>
+        <View style={styles.heroBubble} />
+        <View style={styles.heroTop}>
+          <View>
+            <Text style={styles.heroLabel}>Items at home</Text>
+            <Text style={styles.heroBig}>{items.length}</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={styles.heroLabel}>Spent this week</Text>
+            <Text style={styles.heroSpend}>$0.00</Text>
+          </View>
+        </View>
+        <View style={styles.zoneRow}>
+          {(Object.entries(ZONES) as [ZoneKey, typeof ZONES[ZoneKey]][]).map(([k, z]) => (
+            <TouchableOpacity key={k} onPress={onGoInventory} style={styles.zonePill} activeOpacity={0.8}>
+              <Text style={{ fontSize: 17 }}>{z.icon}</Text>
+              <Text style={styles.zoneCount}>{zoneCounts[k] || 0}</Text>
+              <Text style={styles.zoneLabel}>{z.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </LinearGradient>
+
+      {isEmpty ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyEmoji}>🛒</Text>
+          <Text style={styles.emptyTitle}>Your pantry is empty</Text>
+          <Text style={styles.emptySub}>Start adding items to track what's in your kitchen, monitor expiry dates, and get recipe ideas.</Text>
+          <TouchableOpacity onPress={onGoAdd} style={styles.emptyBtn} activeOpacity={0.85}>
+            <Text style={styles.emptyBtnText}>+ Add your first item</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          <View style={styles.aiRow}>
+            <TouchableOpacity onPress={() => onComingSoon('scan')} style={styles.aiCard} activeOpacity={0.8}>
+              <View style={[styles.aiIcon, { backgroundColor: '#FCE9D9' }]}>
+                <Text style={{ fontSize: 20 }}>📷</Text>
+              </View>
+              <View>
+                <Text style={styles.aiTitle}>Scan bill</Text>
+                <Text style={styles.aiSub}>Upload or photograph</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onComingSoon('voice')} style={styles.aiCard} activeOpacity={0.8}>
+              <View style={[styles.aiIcon, { backgroundColor: C.purpleBg }]}>
+                <Text style={{ fontSize: 20 }}>🎙️</Text>
+              </View>
+              <View>
+                <Text style={styles.aiTitle}>Voice control</Text>
+                <Text style={styles.aiSub}>Ask or update</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity onPress={onGoExpiry} style={styles.expiryBanner} activeOpacity={0.85}>
+            <View style={styles.expiryIcon}>
+              <Text style={{ fontSize: 20 }}>⏰</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.expiryTitle}>{expiring.length} items expiring soon</Text>
+              <Text style={styles.expirySub}>{expired} expired — tap to review</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>Use these first</Text>
+            <TouchableOpacity onPress={onGoInventory}>
+              <Text style={styles.sectionLink}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.expiringRow}>
+            {expiring.slice(0, 5).map((it) => {
+              const st = statusOf(it.days);
+              return (
+                <View key={it.id} style={styles.expiringCard}>
+                  <View style={[styles.expiringIcon, { backgroundColor: ZONES[it.zone]?.bg || '#F0ECE0' }]}>
+                    <Text style={{ fontSize: 24 }}>{it.emoji}</Text>
+                  </View>
+                  <Text style={styles.expiringName} numberOfLines={1}>{it.name}</Text>
+                  <Text style={styles.expiringSpot}>{it.spot}</Text>
+                  <View style={[styles.statusPill, { backgroundColor: st.bg }]}>
+                    <View style={[styles.statusDot, { backgroundColor: st.dot }]} />
+                    <Text style={[styles.statusLabel, { color: st.color }]}>{st.label}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </ScrollView>
+
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>Cook before it spoils</Text>
+            <TouchableOpacity onPress={onGoRecipes}>
+              <Text style={styles.sectionLink}>More</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity onPress={() => onOpenRecipe(top)} style={styles.recipeCard} activeOpacity={0.85}>
+            <View style={styles.recipeIcon}>
+              <Text style={{ fontSize: 38 }}>{top.emoji}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.recipeName}>{top.name}</Text>
+              <Text style={styles.recipeMeta}>⏱ {top.time} · 🔥 {top.calories} cal</Text>
+              <View style={styles.usesTag}>
+                <Text style={styles.usesText}>Uses {top.expiringUse}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { padding: 20, paddingTop: 6, paddingBottom: 120 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 14 },
+  greeting: { fontSize: 13, color: C.muted, fontFamily: fonts.body600 },
+  heading: { fontFamily: fonts.display700, fontSize: 24, letterSpacing: -0.6, color: C.text, marginTop: 3 },
+  voiceBtn: { width: 46, height: 46, borderRadius: 15, backgroundColor: C.purple, alignItems: 'center', justifyContent: 'center' },
+  hero: { borderRadius: 26, padding: 22, paddingBottom: 18, overflow: 'hidden' },
+  heroBubble: { position: 'absolute', top: -40, right: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.07)' },
+  heroTop: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  heroLabel: { fontSize: 13, color: 'rgba(244,239,227,0.8)', fontFamily: fonts.body600 },
+  heroBig: { fontFamily: fonts.display800, fontSize: 46, lineHeight: 48, letterSpacing: -1.5, color: '#F4EFE3', marginTop: 2 },
+  heroSpend: { fontFamily: fonts.display700, fontSize: 22, letterSpacing: -0.5, color: '#F4EFE3', marginTop: 3 },
+  zoneRow: { flexDirection: 'row', gap: 8, marginTop: 18 },
+  zonePill: { flex: 1, backgroundColor: 'rgba(255,255,255,0.13)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', gap: 3 },
+  zoneCount: { fontFamily: fonts.display700, fontSize: 16, color: '#fff' },
+  zoneLabel: { fontSize: 10, color: 'rgba(244,239,227,0.8)', fontFamily: fonts.body600 },
+  aiRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  aiCard: { flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: C.border, borderRadius: 18, padding: 14, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  aiIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  aiTitle: { fontFamily: fonts.display700, fontSize: 13.5, color: C.text },
+  aiSub: { fontSize: 11.5, color: C.muted, fontFamily: fonts.body500 },
+  expiryBanner: { marginTop: 12, backgroundColor: C.amberBg, borderWidth: 1.5, borderColor: '#F0DDA8', borderRadius: 18, padding: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 13 },
+  expiryIcon: { width: 42, height: 42, borderRadius: 13, backgroundColor: C.amber, alignItems: 'center', justifyContent: 'center' },
+  expiryTitle: { fontFamily: fonts.display700, fontSize: 15, color: '#7A5A12' },
+  expirySub: { fontSize: 12.5, color: '#A07E2E', fontFamily: fonts.body500, marginTop: 2 },
+  chevron: { color: '#B58A2E', fontSize: 20 },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 22, marginBottom: 12 },
+  sectionTitle: { fontFamily: fonts.display700, fontSize: 18, color: C.text },
+  sectionLink: { color: C.greenLt, fontFamily: fonts.body700, fontSize: 13 },
+  expiringRow: { gap: 12, paddingRight: 8 },
+  expiringCard: { width: 130, backgroundColor: '#fff', borderWidth: 1, borderColor: C.border, borderRadius: 20, padding: 13 },
+  expiringIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 9 },
+  expiringName: { fontFamily: fonts.body700, fontSize: 13.5, color: C.text },
+  expiringSpot: { fontSize: 11, color: C.muted, fontFamily: fonts.body500, marginVertical: 4 },
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingVertical: 3, paddingHorizontal: 7, borderRadius: 8 },
+  statusDot: { width: 5, height: 5, borderRadius: 3 },
+  statusLabel: { fontFamily: fonts.body700, fontSize: 10.5 },
+  recipeCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.border, borderRadius: 22, padding: 14, flexDirection: 'row', gap: 14, alignItems: 'center' },
+  recipeIcon: { width: 72, height: 72, borderRadius: 18, backgroundColor: '#FCE9D9', alignItems: 'center', justifyContent: 'center' },
+  recipeName: { fontFamily: fonts.display700, fontSize: 15, color: C.text },
+  recipeMeta: { fontSize: 12, color: C.muted, fontFamily: fonts.body500, marginVertical: 6 },
+  usesTag: { backgroundColor: '#E8F2E5', borderRadius: 9, paddingVertical: 4, paddingHorizontal: 9, alignSelf: 'flex-start' },
+  usesText: { color: '#2C6B43', fontFamily: fonts.body700, fontSize: 11 },
+  emptyState: { marginTop: 32, alignItems: 'center', paddingHorizontal: 16 },
+  emptyEmoji: { fontSize: 56, marginBottom: 14 },
+  emptyTitle: { fontFamily: fonts.display700, fontSize: 22, color: C.text, textAlign: 'center' },
+  emptySub: { fontSize: 14, color: C.muted, fontFamily: fonts.body500, textAlign: 'center', marginTop: 8, lineHeight: 21 },
+  emptyBtn: { marginTop: 24, backgroundColor: C.green, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 32 },
+  emptyBtnText: { color: '#F4EFE3', fontFamily: fonts.body700, fontSize: 15 },
+});
