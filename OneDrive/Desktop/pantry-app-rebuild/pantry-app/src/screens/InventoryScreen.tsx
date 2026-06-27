@@ -14,7 +14,7 @@ export default function InventoryScreen({
   items: GroceryItem[];
   onOpenItem: (it: GroceryItem) => void;
   onGoAdd: () => void;
-  onComingSoon: (kind: 'scan' | 'voice') => void;
+  onComingSoon: () => void;
 }) {
   const [zone, setZone] = useState<string>('all');
   const [q, setQ] = useState('');
@@ -41,7 +41,7 @@ export default function InventoryScreen({
         <View style={styles.headerRow}>
           <Text style={styles.heading}>Inventory</Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity onPress={() => onComingSoon('scan')} style={styles.scanBtn} activeOpacity={0.8}>
+            <TouchableOpacity onPress={onGoAdd} style={styles.scanBtn} activeOpacity={0.8}>
               <Text style={{ fontSize: 20 }}>📷</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onGoAdd} style={styles.addBtn} activeOpacity={0.8}>

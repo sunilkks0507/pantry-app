@@ -70,4 +70,6 @@ export type Screen =
   | 'recipes'
   | 'recipeDetail'
   | 'list'
-  | 'add';
+  | 'add'
+  | 'scan'
+  | 'voice';

@@ -38,8 +38,8 @@ export default function BottomNav({
         {LEFT.map(Tab)}
         <View style={styles.micSlot}>
           <TouchableOpacity onPress={onOpenVoice} activeOpacity={0.85}>
-            <LinearGradient colors={[C.purple, '#9B7FD4']} style={styles.micBtn}>
-              <Text style={styles.micIcon}>🎙️</Text>
+            <LinearGradient colors={[C.greenMid, C.green]} style={styles.micBtn}>
+              <Text style={styles.micIcon}>＋</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
       android: { elevation: 8 },
     }),
   },
-  micIcon: { fontSize: 24 },
+  micIcon: { fontSize: 28, color: '#fff', fontWeight: '300', marginTop: -2 },
   homeIndicatorRow: { height: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(251,248,241,0.97)' },
   homeIndicator: { width: 120, height: 4, borderRadius: 3, backgroundColor: C.text, opacity: 0.25 },
 });

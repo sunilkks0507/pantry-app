@@ -19,7 +19,7 @@ export default function HomeScreen({
   onGoExpiry: () => void;
   onGoRecipes: () => void;
   onOpenRecipe: (r: Recipe) => void;
-  onComingSoon: (kind: 'scan' | 'voice') => void;
+  onComingSoon: () => void;
   onGoAdd: () => void;
 }) {
   const expiring = items.filter((i) => i.days <= 3).sort((a, b) => a.days - b.days);
@@ -38,8 +38,8 @@ export default function HomeScreen({
           <Text style={styles.greeting}>Good morning 👋</Text>
           <Text style={styles.heading}>What's in your kitchen</Text>
         </View>
-        <TouchableOpacity onPress={() => onComingSoon('voice')} style={styles.voiceBtn} activeOpacity={0.85}>
-          <Text style={{ fontSize: 20 }}>🎙️</Text>
+        <TouchableOpacity onPress={onGoAdd} style={styles.voiceBtn} activeOpacity={0.85}>
+          <Text style={{ fontSize: 22, color: '#fff', fontWeight: '300' }}>＋</Text>
         </TouchableOpacity>
       </View>
 
@@ -78,22 +78,13 @@ export default function HomeScreen({
       ) : (
         <>
           <View style={styles.aiRow}>
-            <TouchableOpacity onPress={() => onComingSoon('scan')} style={styles.aiCard} activeOpacity={0.8}>
+            <TouchableOpacity onPress={onGoAdd} style={[styles.aiCard, { flex: 1 }]} activeOpacity={0.8}>
               <View style={[styles.aiIcon, { backgroundColor: '#FCE9D9' }]}>
                 <Text style={{ fontSize: 20 }}>📷</Text>
               </View>
-              <View>
-                <Text style={styles.aiTitle}>Scan bill</Text>
-                <Text style={styles.aiSub}>Upload or photograph</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => onComingSoon('voice')} style={styles.aiCard} activeOpacity={0.8}>
-              <View style={[styles.aiIcon, { backgroundColor: C.purpleBg }]}>
-                <Text style={{ fontSize: 20 }}>🎙️</Text>
-              </View>
-              <View>
-                <Text style={styles.aiTitle}>Voice control</Text>
-                <Text style={styles.aiSub}>Ask or update</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.aiTitle}>Add items</Text>
+                <Text style={styles.aiSub}>Manual, scan, or voice</Text>
               </View>
             </TouchableOpacity>
           </View>

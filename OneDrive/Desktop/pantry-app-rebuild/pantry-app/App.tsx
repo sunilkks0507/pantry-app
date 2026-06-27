@@ -21,10 +21,11 @@ import {
 import { C, NAV_SCREENS } from './src/theme';
 import { GroceryItem, Recipe, Screen } from './src/types';
 import { RECIPES } from './src/data';
-import { loadItems, saveItems, loadCart, saveCart, hasOnboarded, setOnboarded } from './src/storage';
+import { loadItems, saveItems, loadCart, saveCart, hasOnboarded, setOnboarded, loadApiKey, saveApiKey } from './src/storage';
 
 import BottomNav from './src/components/BottomNav';
 import ComingSoonModal from './src/components/ComingSoonModal';
+import AddMethodSheet from './src/components/AddMethodSheet';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import InventoryScreen from './src/screens/InventoryScreen';
@@ -34,6 +35,8 @@ import RecipesScreen from './src/screens/RecipesScreen';
 import RecipeDetailScreen from './src/screens/RecipeDetailScreen';
 import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import AddItemScreen from './src/screens/AddItemScreen';
+import ScanScreen from './src/screens/ScanScreen';
+import VoiceScreen from './src/screens/VoiceScreen';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -57,25 +60,24 @@ export default function App() {
   const [activeRecipe, setActiveRecipe] = useState<Recipe>(RECIPES[0]);
   const [cart, setCart] = useState<Record<string, boolean>>({});
   const [history, setHistory] = useState<Screen[]>([]);
-  const [comingSoon, setComingSoon] = useState<null | 'scan' | 'voice'>(null);
+  const [addSheetVisible, setAddSheetVisible] = useState(false);
+  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
     (async () => {
-      const [storedItems, storedCart, onboarded] = await Promise.all([loadItems(), loadCart(), hasOnboarded()]);
+      const [storedItems, storedCart, onboarded, storedKey] = await Promise.all([
+        loadItems(), loadCart(), hasOnboarded(), loadApiKey(),
+      ]);
       setItems(storedItems);
       setCart(storedCart);
+      setApiKey(storedKey);
       setScreen(onboarded ? 'home' : 'onboarding');
       setReady(true);
     })();
   }, []);
 
-  useEffect(() => {
-    if (ready) saveItems(items);
-  }, [items, ready]);
-
-  useEffect(() => {
-    if (ready) saveCart(cart);
-  }, [cart, ready]);
+  useEffect(() => { if (ready) saveItems(items); }, [items, ready]);
+  useEffect(() => { if (ready) saveCart(cart); }, [cart, ready]);
 
   const push = useCallback((s: Screen) => {
     setHistory((h) => [...h, screen]);
@@ -100,7 +102,21 @@ export default function App() {
   const openRecipe = (r: Recipe) => { setActiveRecipe(r); push('recipeDetail'); };
   const toggleCart = (id: string) => setCart((c) => ({ ...c, [id]: !c[id] }));
   const finishOnboarding = () => { setOnboarded(); go('home'); };
-  const addItem = (item: GroceryItem) => { setItems((prev) => [...prev, item]); go('inventory'); };
+
+  const addItems = (newItems: GroceryItem[]) => {
+    setItems((prev) => [...prev, ...newItems]);
+    go('inventory');
+  };
+
+  const addItem = (item: GroceryItem) => addItems([item]);
+
+  const openAddSheet = () => setAddSheetVisible(true);
+  const closeAddSheet = () => setAddSheetVisible(false);
+
+  const handleUpdateApiKey = async (key: string) => {
+    setApiKey(key);
+    await saveApiKey(key);
+  };
 
   if (!fontsLoaded || !ready) {
     return (
@@ -129,12 +145,17 @@ export default function App() {
               onGoExpiry={() => push('expiry')}
               onGoRecipes={() => go('recipes')}
               onOpenRecipe={openRecipe}
-              onComingSoon={setComingSoon}
-              onGoAdd={() => push('add')}
+              onComingSoon={() => {}}
+              onGoAdd={openAddSheet}
             />
           )}
           {screen === 'inventory' && (
-            <InventoryScreen items={items} onOpenItem={openItem} onGoAdd={() => push('add')} onComingSoon={setComingSoon} />
+            <InventoryScreen
+              items={items}
+              onOpenItem={openItem}
+              onGoAdd={openAddSheet}
+              onComingSoon={() => {}}
+            />
           )}
           {screen === 'item' && activeItem && <ItemDetailScreen item={activeItem} onBack={back} />}
           {screen === 'expiry' && <ExpiryScreen items={items.filter((i) => i.days <= 3)} onBack={back} />}
@@ -142,25 +163,34 @@ export default function App() {
           {screen === 'recipeDetail' && <RecipeDetailScreen recipe={activeRecipe} onBack={back} />}
           {screen === 'list' && <ShoppingListScreen cart={cart} onToggle={toggleCart} />}
           {screen === 'add' && <AddItemScreen onBack={back} onSave={addItem} />}
+          {screen === 'scan' && (
+            <ScanScreen
+              onBack={back}
+              onSave={addItems}
+              apiKey={apiKey}
+              onApiKeyChange={handleUpdateApiKey}
+            />
+          )}
+          {screen === 'voice' && (
+            <VoiceScreen
+              onBack={back}
+              onSave={addItems}
+              apiKey={apiKey}
+              onApiKeyChange={handleUpdateApiKey}
+            />
+          )}
         </View>
 
         {NAV_SCREENS.includes(screen) && (
-          <BottomNav screen={screen} onGo={go} onOpenVoice={() => setComingSoon('voice')} />
+          <BottomNav screen={screen} onGo={go} onOpenVoice={openAddSheet} />
         )}
 
-        <ComingSoonModal
-          visible={comingSoon === 'scan'}
-          onClose={() => setComingSoon(null)}
-          icon="📷"
-          title="Bill scanning is coming soon"
-          body="Snap a photo of your receipt and Pantry will add the items automatically. This needs an AI connection we haven't wired up yet."
-        />
-        <ComingSoonModal
-          visible={comingSoon === 'voice'}
-          onClose={() => setComingSoon(null)}
-          icon="🎙️"
-          title="Voice control is coming soon"
-          body="Ask Pantry what's expiring or tell it to update an item by voice. This needs microphone access and an AI connection we haven't wired up yet."
+        <AddMethodSheet
+          visible={addSheetVisible}
+          onClose={closeAddSheet}
+          onManual={() => { closeAddSheet(); push('add'); }}
+          onScan={() => { closeAddSheet(); push('scan'); }}
+          onVoice={() => { closeAddSheet(); push('voice'); }}
         />
       </SafeAreaView>
     </SafeAreaProvider>
