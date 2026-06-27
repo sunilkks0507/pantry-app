@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Pantry",
+    "slug": "pantry-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pantry.app"
+    },
+    "android": {
+      "package": "com.pantry.app"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
